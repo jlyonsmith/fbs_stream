@@ -1,0 +1,19 @@
+namespace MsgSchema;
+
+union Message { Info, Error }
+
+table Info {
+    protocol_ver: int;
+}
+
+table Error {
+    error_no: int;
+    error_string: string;
+}
+
+table Header {
+    msg: Message;
+    // other header fields
+}
+
+root_type Header;

@@ -1,4 +1,4 @@
-use fbs_stream::my_game::root_as_monster;
+use fbs_stream::msg_schema::root_as_header;
 use futures::stream::StreamExt;
 use tokio::net::TcpListener;
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
@@ -22,14 +22,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Ok(bytes_mut) => {
                         println!("Received frame with length: {}", bytes_mut.len());
 
-                        let monster = root_as_monster(&bytes_mut).unwrap();
+                        let header = root_as_header(&bytes_mut).unwrap();
 
-                        println!(
-                            "Monster received: name = {:?}, hp = {}, mana = {}",
-                            monster.name(),
-                            monster.hp(),
-                            monster.mana()
-                        );
+                        println!("Message Type: {:?}", header.msg_type());
+
+                        match header.msg_type() {
+                            fbs_stream::msg_schema::Message::Info => {
+                                let info = header.msg_as_info().unwrap();
+                                println!("Protocol Version: {}", info.protocol_ver());
+                            }
+                            fbs_stream::msg_schema::Message::Error => {
+                                let error = header.msg_as_error().unwrap();
+                                println!("Error Code: {}", error.error_no());
+                                println!("Error Message: {}", error.error_string().unwrap());
+                            }
+                            _ => println!("Unknown message type"),
+                        }
                     }
                     Err(e) => {
                         eprintln!("Error reading frame: {}", e);
